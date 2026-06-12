@@ -8,7 +8,7 @@
 import { initializeApp } from "firebase/app";
 import {
   getFirestore, collection, doc, setDoc, getDoc,
-  getDocs, onSnapshot, query, orderBy
+  getDocs, onSnapshot, query, orderBy, deleteDoc
 } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -74,3 +74,18 @@ export async function getMemberLogs(memberId) {
 }
 
 export { db };
+
+// Delete a member and their logs
+export async function deleteMember(memberId) {
+  try {
+    await deleteDoc(doc(db, "members", memberId));
+    await deleteDoc(doc(db, "logs", memberId));
+    // Update index
+    const existing = await getDoc(doc(db, "members-index"));
+    // Also update shared index if it exists
+    const snap = await getDocs(collection(db, "members"));
+    // Member doc is already deleted, index will update via listener
+  } catch (e) {
+    console.error("Error deleting member:", e);
+  }
+}

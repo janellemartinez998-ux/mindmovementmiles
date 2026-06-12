@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   saveMember, getAllMembers, onMembersChange,
-  saveMemberLogs, getMemberLogs
+  saveMemberLogs, getMemberLogs, deleteMember
 } from "./firebase.js";
 
 const GOAL = 150;
@@ -214,6 +214,13 @@ export default function App() {
     }
     setExpandedMember(memberId);
   }, [memberLogs, expandedMember]);
+
+  const handleDeleteMember = useCallback(async (memberId, memberName) => {
+    if (!window.confirm(`remove ${memberName} from the challenge? this can't be undone.`)) return;
+    await deleteMember(memberId);
+    setAllMembers((prev) => prev.filter((m) => m.id !== memberId));
+    setExpandedMember(null);
+  }, []);
 
   // ---- Derived state ----
   const progress = currentUser ? Math.min((currentUser.miles / GOAL) * 100, 100) : 0;
@@ -804,8 +811,16 @@ export default function App() {
                             ))}
                           </div>
                         )}
-                        <div style={{ fontSize: 10, color: c.sub, marginTop: 10, fontStyle: "italic" }}>
-                          joined {new Date(m.joinedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
+                          <div style={{ fontSize: 10, color: c.sub, fontStyle: "italic" }}>
+                            joined {new Date(m.joinedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                          </div>
+                          <button onClick={(e) => { e.stopPropagation(); handleDeleteMember(m.id, m.name); }}
+                            style={{
+                              padding: "5px 12px", borderRadius: 8, border: `1px solid ${c.red}`,
+                              background: "transparent", color: c.red, fontSize: 10, fontWeight: 600,
+                              cursor: "pointer", fontFamily: sans, letterSpacing: 0.5,
+                            }}>remove member</button>
                         </div>
                       </div>
                     )}
