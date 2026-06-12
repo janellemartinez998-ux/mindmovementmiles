@@ -18,9 +18,9 @@ function generateId() {
 const MILESTONES = [
   { at: 25, label: "sunset run", icon: "🌅", desc: "sunset beach run + cold-pressed sips from joia juices", unlock: "july 26" },
   { at: 50, label: "vision board", icon: "📸", desc: "vision board workshop + film camera pics", unlock: "august 9" },
-  { at: 75, label: "wellness tote", icon: "🧘‍♀️", desc: "LISTA x lululemon journal + curated wellness tote", unlock: "august 23" },
+  { at: 75, label: "wellness tote", icon: "🧘‍♀️", desc: "custom LISTA journal + curated wellness tote", unlock: "august 23" },
   { at: 100, label: "finisher", icon: "👟", desc: "exclusive LISTA x lululemon finisher apparel", unlock: "september 6" },
-  { at: 150, label: "bonus club", icon: "👑", desc: "private sunset yoga/barre on the beach led by janelle + branded coconuts", unlock: "september 20" },
+  { at: 150, label: "bonus club", icon: "👑", desc: "private sunset yoga led by janelle + cold plunge", unlock: "september 20" },
 ];
 
 const WEEKLY_THEMES = [
@@ -402,7 +402,7 @@ export default function App() {
               }}>
                 <span style={{ fontSize: 22 }}>🎧</span>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>lista run playlist</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>lista playlist baby</div>
                   <div style={{ fontSize: 10, color: "rgba(255,255,255,0.8)" }}>tap to open on spotify</div>
                 </div>
                 <div style={{ marginLeft: "auto", fontSize: 16, color: "#fff" }}>↗</div>
