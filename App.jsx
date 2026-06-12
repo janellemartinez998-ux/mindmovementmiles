@@ -402,7 +402,7 @@ export default function App() {
               }}>
                 <span style={{ fontSize: 22 }}>🎧</span>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>lista playlist baby</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>LISTA summer playlist baby</div>
                   <div style={{ fontSize: 10, color: "rgba(255,255,255,0.8)" }}>tap to open on spotify</div>
                 </div>
                 <div style={{ marginLeft: "auto", fontSize: 16, color: "#fff" }}>↗</div>
