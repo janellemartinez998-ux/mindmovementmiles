@@ -6,18 +6,34 @@ import {
 
 const GOAL = 150;
 const ADMIN_CODE = "lista2026";
+const CHALLENGE_START = "2026-07-06";
+const CHALLENGE_END = "2026-09-06";
+const WEEKLY_MIN = 11;
+const SPOTIFY_URL = "https://open.spotify.com/playlist/1E0LUIlyzjgO2r94TXXUWn?si=GYalAAk3RhyLaV4ZNnCcuA&pi=jCMfsU9VTL6Fs";
 
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
 
 const MILESTONES = [
-  { at: 25, label: "spark", icon: "🔥" },
-  { at: 50, label: "momentum", icon: "🌊" },
-  { at: 75, label: "power", icon: "⚡" },
-  { at: 100, label: "unstoppable", icon: "🌴" },
-  { at: 125, label: "transcend", icon: "🦋" },
-  { at: 150, label: "crowned", icon: "👑" },
+  { at: 25, label: "sunset run", icon: "🌅", desc: "sunset beach run + cold-pressed sips from joia juices", unlock: "july 26" },
+  { at: 50, label: "vision board", icon: "📸", desc: "vision board workshop + film camera pics", unlock: "august 9" },
+  { at: 75, label: "wellness tote", icon: "🧘‍♀️", desc: "LISTA x lululemon journal + curated wellness tote", unlock: "august 23" },
+  { at: 100, label: "finisher", icon: "👟", desc: "exclusive LISTA x lululemon finisher apparel", unlock: "september 6" },
+  { at: 150, label: "bonus club", icon: "👑", desc: "private sunset yoga/barre on the beach led by janelle + branded coconuts", unlock: "september 20" },
+];
+
+const WEEKLY_THEMES = [
+  { week: 1, theme: "set your intention", dates: "june 29 – july 5", prep: true },
+  { week: 2, theme: "show up for yourself", dates: "july 6 – 12" },
+  { week: 3, theme: "trust the process", dates: "july 13 – 19" },
+  { week: 4, theme: "you belong here", dates: "july 20 – 26" },
+  { week: 5, theme: "run your own race", dates: "july 27 – aug 2" },
+  { week: 6, theme: "halfway there, still here", dates: "aug 3 – 9" },
+  { week: 7, theme: "move through it", dates: "aug 10 – 16" },
+  { week: 8, theme: "grateful for the grind", dates: "aug 17 – 23" },
+  { week: 9, theme: "almost there, stay present", dates: "aug 24 – 30" },
+  { week: 10, theme: "you did that", dates: "aug 31 – sept 6" },
 ];
 
 const AVATARS = [
@@ -27,12 +43,19 @@ const AVATARS = [
 
 const QUOTES = [
   { text: "she remembered who she was and the game changed.", author: "lalah delia" },
-  { text: "you were born to be real, not to be perfect.", author: "ralph marston" },
-  { text: "the body achieves what the mind believes.", author: "unknown" },
-  { text: "don't limit your challenges. challenge your limits.", author: "unknown" },
-  { text: "your only limit is you.", author: "unknown" },
-  { text: "run when you can, walk if you have to, crawl if you must; just never give up.", author: "dean karnazes" },
-  { text: "the miracle isn't that i finished. the miracle is that i had the courage to start.", author: "john bingham" },
+  { text: "i'm not lucky. i'm talented. and i'm taking advantage of it.", author: "selena quintanilla" },
+  { text: "at the end of the day, we can endure much more than we think we can.", author: "frida kahlo" },
+  { text: "if you have the opportunity to do something with your life, do it. don't waste it.", author: "celia cruz" },
+  { text: "success is not about the destination. it's about the journey.", author: "laurie hernandez" },
+  { text: "i am my own experiment. i am my own work of art.", author: "madonna (ciccone)" },
+  { text: "the world wasn't built for us but we're still here building.", author: "alexandria ocasio-cortez" },
+  { text: "don't be afraid to dream big and dare to fail.", author: "ellen ochoa" },
+  { text: "i didn't get there by wishing for it. i worked to get there.", author: "estée lauder" },
+  { text: "there is no force more powerful than a woman determined to rise.", author: "bozoma saint john" },
+  { text: "the only way to do great work is to love what you do.", author: "sonia sotomayor" },
+  { text: "i am deliberate and afraid of nothing.", author: "audre lorde" },
+  { text: "your legacy is every life you touch.", author: "maya angelou" },
+  { text: "feet, what do i need you for when i have wings to fly?", author: "frida kahlo" },
 ];
 
 const font = "'Cormorant Garamond', Georgia, serif";
@@ -120,7 +143,7 @@ export default function App() {
 
     const today = new Date().toISOString().slice(0, 10);
     const weekNum = Math.ceil(
-      (new Date() - new Date("2026-06-01")) / (1000 * 60 * 60 * 24 * 7)
+      (new Date() - new Date(CHALLENGE_START)) / (1000 * 60 * 60 * 24 * 7)
     );
     const weekKey = `w${Math.max(1, weekNum)}`;
 
@@ -208,6 +231,11 @@ export default function App() {
   const maxWeek = weeklyEntries.length > 0 ? Math.max(...weeklyEntries.map((w) => w.miles)) : 1;
   const recentLogs = logHistory.slice(-5).reverse();
 
+  // Current week theme
+  const daysSincePrep = Math.floor((new Date() - new Date("2026-06-29")) / (1000 * 60 * 60 * 24));
+  const currentWeekIdx = Math.min(Math.max(0, Math.floor(daysSincePrep / 7)), WEEKLY_THEMES.length - 1);
+  const currentTheme = WEEKLY_THEMES[currentWeekIdx];
+
   // ---- Loading screen ----
   if (loading) {
     return (
@@ -231,7 +259,7 @@ export default function App() {
               mind.movement<br />.miles
             </div>
             <div style={{ fontSize: 12, color: c.sub, marginTop: 12 }}>150 miles · 10 weeks · one community</div>
-            <div style={{ fontSize: 11, color: c.warm, marginTop: 6 }}>june 1 — august 4, 2026</div>
+            <div style={{ fontSize: 11, color: c.warm, marginTop: 6 }}>july 6 — september 6, 2026</div>
           </div>
 
           <div style={{ background: c.card, borderRadius: 20, padding: "32px 24px", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
@@ -345,21 +373,67 @@ export default function App() {
               ))}
             </div>
 
+            {/* weekly theme */}
+            <div style={{
+              background: `linear-gradient(135deg, ${c.card}, #FBF6F0)`, borderRadius: 16,
+              padding: "16px 20px", marginBottom: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+              border: `1px solid ${c.sand}`,
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <div style={{ fontSize: 9, letterSpacing: 2, color: c.sub, textTransform: "uppercase" }}>week {currentTheme.week} theme</div>
+                  <div style={{ fontFamily: font, fontSize: 20, fontStyle: "italic", fontWeight: 300, color: c.text, marginTop: 4 }}>
+                    {currentTheme.theme}
+                  </div>
+                  <div style={{ fontSize: 10, color: c.warm, marginTop: 4 }}>{currentTheme.dates}</div>
+                </div>
+                {currentTheme.prep && (
+                  <div style={{ fontSize: 9, background: c.highlight, color: "#fff", padding: "3px 8px", borderRadius: 6, fontWeight: 600 }}>prep week</div>
+                )}
+              </div>
+            </div>
+
+            {/* spotify */}
+            <a href={SPOTIFY_URL} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
+              <div style={{
+                background: "#1DB954", borderRadius: 14, padding: "14px 20px", marginBottom: 16,
+                display: "flex", alignItems: "center", gap: 12, cursor: "pointer",
+                boxShadow: "0 2px 8px rgba(29,185,84,0.2)",
+              }}>
+                <span style={{ fontSize: 22 }}>🎧</span>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>lista run playlist</div>
+                  <div style={{ fontSize: 10, color: "rgba(255,255,255,0.8)" }}>tap to open on spotify</div>
+                </div>
+                <div style={{ marginLeft: "auto", fontSize: 16, color: "#fff" }}>↗</div>
+              </div>
+            </a>
+
             {/* milestones */}
             <div style={{ background: c.card, borderRadius: 16, padding: "18px 20px", marginBottom: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
               <div style={{ fontSize: 10, letterSpacing: 2, color: c.sub, textTransform: "uppercase", marginBottom: 14 }}>milestones</div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {MILESTONES.map((m, i) => {
                   const hit = currentUser.miles >= m.at;
                   return (
-                    <div key={i} style={{ textAlign: "center", flex: 1 }}>
+                    <div key={i} style={{
+                      display: "flex", alignItems: "center", gap: 12, padding: "10px 12px",
+                      borderRadius: 12, background: hit ? `linear-gradient(135deg, #FBF6F0, ${c.soft})` : c.bg,
+                      opacity: hit ? 1 : 0.6, transition: "all 0.4s ease",
+                    }}>
                       <div style={{
-                        width: 36, height: 36, borderRadius: "50%",
-                        background: hit ? `linear-gradient(135deg, ${c.highlight}, ${c.accent})` : c.soft,
-                        display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 6px",
-                        fontSize: 16, opacity: hit ? 1 : 0.4, transition: "all 0.4s ease",
+                        width: 40, height: 40, borderRadius: "50%", flexShrink: 0,
+                        background: hit ? `linear-gradient(135deg, ${c.highlight}, ${c.accent})` : c.sand,
+                        display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
                       }}>{m.icon}</div>
-                      <div style={{ fontSize: 9, color: hit ? c.accent : c.sub, fontWeight: hit ? 500 : 400 }}>{m.at}mi</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: 13, fontWeight: 500, color: hit ? c.text : c.sub }}>{m.at} miles — {m.label}</span>
+                          {hit && <span style={{ fontSize: 8, background: c.green, color: "#fff", padding: "2px 6px", borderRadius: 4, fontWeight: 600 }}>unlocked</span>}
+                        </div>
+                        <div style={{ fontSize: 10, color: c.sub, marginTop: 2, lineHeight: 1.3 }}>{m.desc}</div>
+                        <div style={{ fontSize: 9, color: c.warm, marginTop: 2 }}>unlock: {m.unlock}</div>
+                      </div>
                     </div>
                   );
                 })}
@@ -385,6 +459,9 @@ export default function App() {
                       </div>
                     );
                   })}
+                </div>
+                <div style={{ fontSize: 9, color: c.warm, marginTop: 8, textAlign: "center" }}>
+                  weekly minimum: {WEEKLY_MIN} miles · bonus pace: 17 miles/week
                 </div>
               </div>
             )}
