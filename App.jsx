@@ -34,7 +34,7 @@ const WEEKLY_THEMES = [
   { week: 10, theme: "you did that", dates: "aug 31 \u2013 sept 6" },
 ];
 
-const AVATARS = ["\u{1F334}","\u{1F338}","\u{1F98B}","\u{1F33B}","\u{1F30A}","\u{1F525}","\u2728","\u{1F319}","\u{1FAB7}","\u{1F33F}","\u{1F4AB}","\u{1FAE7}","\u{1FAB B}","\u{1F343}","\u2600\uFE0F","\u{1F9FF}"];
+const AVATARS = ["\u{1F334}","\u{1F338}","\u{1F98B}","\u{1F33B}","\u{1F30A}","\u{1F525}","\u2728","\u{1F319}","\u{1FAB7}","\u{1F33F}","\u{1F4AB}","\u{1FAE7}","\u{1FABB}","\u{1F343}","\u2600\uFE0F","\u{1F9FF}"];
 
 const QUOTES = [
   { text: "she remembered who she was and the game changed.", author: "lalah delia" },
