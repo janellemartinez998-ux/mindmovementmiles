@@ -1,0 +1,380 @@
+import { useState, useEffect, useCallback } from "react";
+import {
+  saveMember, getAllMembers, onMembersChange,
+  saveMemberLogs, getMemberLogs, deleteMember,
+  signUpUser, signInUser, signOutUser, resetPassword, onAuthChange
+} from "./firebase.js";
+
+const GOAL = 150;
+const ADMIN_CODE = "lista2026";
+const CHALLENGE_START = "2026-07-06";
+const WEEKLY_MIN = 12;
+const SPOTIFY_URL = "https://open.spotify.com/playlist/1E0LUIlyzjgO2r94TXXUWn";
+const LOGO = "data:image/png;base64,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";
+
+
+const MILESTONES = [
+  { at: 25, label: "sunset run", icon: "\u{1F305}", desc: "sunset beach run + cold-pressed sips from joia juices", unlock: "july 26" },
+  { at: 50, label: "vision board", icon: "\u{1F4F8}", desc: "vision board workshop + film camera pics", unlock: "august 9" },
+  { at: 75, label: "wellness tote", icon: "\u{1F9D8}\u200D\u2640\uFE0F", desc: "custom LISTA journal + curated wellness tote", unlock: "august 23" },
+  { at: 100, label: "finisher", icon: "\u{1F45F}", desc: "exclusive LISTA x lululemon finisher apparel", unlock: "september 6" },
+  { at: 150, label: "bonus club", icon: "\u{1F451}", desc: "private sunset yoga led by janelle + cold plunge", unlock: "september 20" },
+];
+
+const WEEKLY_THEMES = [
+  { week: 1, theme: "set your intention", dates: "june 29 \u2013 july 5", prep: true },
+  { week: 2, theme: "show up for yourself", dates: "july 6 \u2013 12" },
+  { week: 3, theme: "trust the process", dates: "july 13 \u2013 19" },
+  { week: 4, theme: "you belong here", dates: "july 20 \u2013 26" },
+  { week: 5, theme: "run your own race", dates: "july 27 \u2013 aug 2" },
+  { week: 6, theme: "halfway there, still here", dates: "aug 3 \u2013 9" },
+  { week: 7, theme: "move through it", dates: "aug 10 \u2013 16" },
+  { week: 8, theme: "grateful for the grind", dates: "aug 17 \u2013 23" },
+  { week: 9, theme: "almost there, stay present", dates: "aug 24 \u2013 30" },
+  { week: 10, theme: "you did that", dates: "aug 31 \u2013 sept 6" },
+];
+
+const AVATARS = ["\u{1F334}","\u{1F338}","\u{1F98B}","\u{1F33B}","\u{1F30A}","\u{1F525}","\u2728","\u{1F319}","\u{1FAB7}","\u{1F33F}","\u{1F4AB}","\u{1FAE7}","\u{1FAB B}","\u{1F343}","\u2600\uFE0F","\u{1F9FF}"];
+
+const QUOTES = [
+  { text: "she remembered who she was and the game changed.", author: "lalah delia" },
+  { text: "i\u2019m not lucky. i\u2019m talented. and i\u2019m taking advantage of it.", author: "selena quintanilla" },
+  { text: "at the end of the day, we can endure much more than we think we can.", author: "frida kahlo" },
+  { text: "if you have the opportunity to do something with your life, do it.", author: "celia cruz" },
+  { text: "the world wasn\u2019t built for us but we\u2019re still here building.", author: "alexandria ocasio-cortez" },
+  { text: "don\u2019t be afraid to dream big and dare to fail.", author: "ellen ochoa" },
+  { text: "i am deliberate and afraid of nothing.", author: "audre lorde" },
+  { text: "your legacy is every life you touch.", author: "maya angelou" },
+  { text: "feet, what do i need you for when i have wings to fly?", author: "frida kahlo" },
+  { text: "the only way to do great work is to love what you do.", author: "sonia sotomayor" },
+];
+
+const font = "'Cormorant Garamond', Georgia, serif";
+const sans = "'DM Sans', system-ui, sans-serif";
+const c = {bg:"#F7F4F0",card:"#FFFFFF",sand:"#E8E2D9",warm:"#D4C5B5",text:"#2C2825",sub:"#8A817A",accent:"#8B6F4E",highlight:"#C4956A",green:"#7A9B76",soft:"#EDE8E2",red:"#C4736A"};
+
+export default function App() {
+  const [tab, setTab] = useState("home");
+  const [currentUser, setCurrentUser] = useState(null);
+  const [allMembers, setAllMembers] = useState([]);
+  const [input, setInput] = useState("");
+  const [stravaLink, setStravaLink] = useState("");
+  const [logged, setLogged] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [onboardName, setOnboardName] = useState("");
+  const [onboardLastName, setOnboardLastName] = useState("");
+  const [onboardPhone, setOnboardPhone] = useState("");
+  const [onboardIG, setOnboardIG] = useState("");
+  const [onboardGoal, setOnboardGoal] = useState("");
+  const [onboardSize, setOnboardSize] = useState("");
+  const [onboardAvatar, setOnboardAvatar] = useState("\u{1F334}");
+  const [logHistory, setLogHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [authUser, setAuthUser] = useState(null);
+  const [authScreen, setAuthScreen] = useState("login");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPass, setAuthPass] = useState("");
+  const [authPassConfirm, setAuthPassConfirm] = useState("");
+  const [showPass, setShowPass] = useState(false);
+  const [authError, setAuthError] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [needsProfile, setNeedsProfile] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminCode, setAdminCode] = useState("");
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [expandedMember, setExpandedMember] = useState(null);
+  const [memberLogs, setMemberLogs] = useState({});
+  const dailyQuote = QUOTES[new Date().getDay() % QUOTES.length];
+
+  useEffect(() => {
+    const unsub = onAuthChange(async (user) => {
+      try {
+        if (user) {
+          setAuthUser(user);
+          const members = await getAllMembers();
+          setAllMembers(members);
+          const profile = members.find((m) => m.id === user.uid);
+          if (profile) { setCurrentUser(profile); setNeedsProfile(false);
+            try { const logs = await getMemberLogs(user.uid); setLogHistory(logs); } catch(e){}
+          } else { setNeedsProfile(true); }
+          if (localStorage.getItem("lista-mmm-admin")==="true") setIsAdmin(true);
+        } else { setAuthUser(null); setCurrentUser(null); setNeedsProfile(false); }
+      } catch(e) { if(user){setAuthUser(user);setNeedsProfile(true);} }
+      setLoading(false); setTimeout(()=>setReady(true),100);
+    });
+    return ()=>unsub();
+  }, []);
+
+  useEffect(() => { const unsub = onMembersChange((m)=>setAllMembers(m)); return ()=>unsub(); }, []);
+
+  const handleSignIn = useCallback(async () => {
+    setAuthError("");
+    if (!authEmail.trim()) { setAuthError("please enter your email"); return; }
+    if (!authPass.trim()) { setAuthError("please enter your password"); return; }
+    setAuthLoading(true);
+    try {
+      const result = await signInUser(authEmail.trim(), authPass.trim());
+      setAuthUser(result);
+      try {
+        const members = await getAllMembers(); setAllMembers(members);
+        const profile = members.find((m)=>m.id===result.uid);
+        if(profile){setCurrentUser(profile);setNeedsProfile(false);
+          try{const logs=await getMemberLogs(result.uid);setLogHistory(logs);}catch(e){}
+        } else {setNeedsProfile(true);}
+      } catch(e){setNeedsProfile(true);}
+    } catch(e) {
+      const msg = String(e.code||e.message||e);
+      if(msg.includes("wrong-password")||msg.includes("invalid-credential")) setAuthError("incorrect password. try again or use forgot password.");
+      else if(msg.includes("user-not-found")) setAuthError("no account with this email. tap sign up to create one.");
+      else if(msg.includes("invalid-email")) setAuthError("please enter a valid email address.");
+      else if(msg.includes("too-many-requests")) setAuthError("too many attempts. wait a few minutes.");
+      else setAuthError("login failed: "+msg);
+    }
+    setAuthLoading(false);
+  }, [authEmail, authPass]);
+
+  const handleSignUp = useCallback(async () => {
+    setAuthError("");
+    if(!authEmail.trim()){setAuthError("please enter your email");return;}
+    if(!authPass.trim()){setAuthError("please create a password");return;}
+    if(authPass.length<6){setAuthError("password must be at least 6 characters");return;}
+    if(authPass!==authPassConfirm){setAuthError("passwords don't match. try again.");return;}
+    setAuthLoading(true);
+    try {
+      const result = await signUpUser(authEmail.trim(), authPass.trim());
+      setAuthUser(result); setNeedsProfile(true);
+      try{const members=await getAllMembers();setAllMembers(members);}catch(e){}
+    } catch(e) {
+      const msg=String(e.code||e.message||e);
+      if(msg.includes("email-already-in-use")) setAuthError("this email is already registered. tap log in below.");
+      else if(msg.includes("invalid-email")) setAuthError("please enter a valid email address.");
+      else if(msg.includes("weak-password")) setAuthError("password too weak. use at least 6 characters.");
+      else setAuthError("signup failed: "+msg);
+    }
+    setAuthLoading(false);
+  }, [authEmail, authPass, authPassConfirm]);
+
+  const handleResetPassword = useCallback(async () => {
+    if(!authEmail.trim()){setAuthError("enter your email first");return;}
+    setAuthLoading(true);setAuthError("");
+    try{await resetPassword(authEmail.trim());setResetSent(true);}
+    catch(e){setAuthError("couldn't send reset email. check the address.");}
+    setAuthLoading(false);
+  }, [authEmail]);
+
+  const handleLogout = useCallback(async () => {
+    await signOutUser(); setCurrentUser(null); setAuthUser(null); setIsAdmin(false);
+    localStorage.removeItem("lista-mmm-admin");
+  }, []);
+
+  const canJoin = onboardName.trim()&&onboardLastName.trim()&&onboardPhone.trim()&&onboardIG.trim()&&onboardGoal&&onboardSize;
+
+  const handleJoin = useCallback(async () => {
+    if(!canJoin||!authUser) return;
+    const newUser = {
+      id:authUser.uid, name:onboardName.trim().toLowerCase(), lastName:onboardLastName.trim().toLowerCase(),
+      email:authUser.email, phone:onboardPhone.trim(), instagram:onboardIG.trim(),
+      goal:onboardGoal, luluSize:onboardSize, avatar:onboardAvatar,
+      miles:0, streak:0, verifiedRuns:0, lastLogDate:null, joinedAt:new Date().toISOString(), weeklyMiles:{},
+    };
+    setCurrentUser(newUser); setNeedsProfile(false); await saveMember(newUser);
+  }, [onboardName,onboardLastName,onboardPhone,onboardIG,onboardGoal,onboardSize,onboardAvatar,canJoin,authUser]);
+
+  const handleLog = useCallback(async () => {
+    const val=parseFloat(input);
+    if(isNaN(val)||val<=0||val>50||!currentUser) return;
+    const today=new Date().toISOString().slice(0,10);
+    const weekNum=Math.ceil((new Date()-new Date(CHALLENGE_START))/(1000*60*60*24*7));
+    const weekKey=`w${Math.max(1,weekNum)}`;
+    const isConsecutive=currentUser.lastLogDate&&(today===currentUser.lastLogDate||new Date(today)-new Date(currentUser.lastLogDate)<=86400000);
+    const hasStrava=!!stravaLink.trim();
+    const updated={...currentUser,miles:Math.round((currentUser.miles+val)*10)/10,
+      streak:isConsecutive?currentUser.streak+1:1,lastLogDate:today,
+      verifiedRuns:(currentUser.verifiedRuns||0)+(hasStrava?1:0),
+      weeklyMiles:{...currentUser.weeklyMiles,[weekKey]:Math.round(((currentUser.weeklyMiles?.[weekKey]||0)+val)*10)/10},
+    };
+    const entry={date:today,miles:val,timestamp:Date.now(),strava:hasStrava?stravaLink.trim():null};
+    const hist=[...logHistory,entry];
+    setCurrentUser(updated);setLogHistory(hist);
+    await saveMember(updated);await saveMemberLogs(updated.id,hist);
+    setInput("");setStravaLink("");setLogged(true);setTimeout(()=>setLogged(false),2200);
+  }, [input,stravaLink,currentUser,logHistory]);
+
+  const handleAdminLogin = useCallback(()=>{if(adminCode.trim().toLowerCase()===ADMIN_CODE){setIsAdmin(true);setShowAdminLogin(false);setAdminCode("");localStorage.setItem("lista-mmm-admin","true");}},[adminCode]);
+  const handleAdminLogout = useCallback(()=>{setIsAdmin(false);if(tab==="admin")setTab("home");localStorage.removeItem("lista-mmm-admin");},[tab]);
+  const loadMemberLogs = useCallback(async(mid)=>{if(expandedMember===mid){setExpandedMember(null);return;}if(!memberLogs[mid]){try{const logs=await getMemberLogs(mid);setMemberLogs(p=>({...p,[mid]:logs}));}catch(e){setMemberLogs(p=>({...p,[mid]:[]}));}}setExpandedMember(mid);},[memberLogs,expandedMember]);
+  const handleDeleteMember = useCallback(async(mid,mname)=>{if(!window.confirm(`remove ${mname} from the challenge?`))return;await deleteMember(mid);setAllMembers(p=>p.filter(m=>m.id!==mid));setExpandedMember(null);},[]);
+  const handleExportCSV = useCallback(()=>{const h=["First Name","Last Name","Email","Phone","Instagram","Goal","Lululemon Size","Miles","Streak","Verified Runs","Joined"];const r=[...allMembers].sort((a,b)=>b.miles-a.miles).map(m=>[m.name||"",m.lastName||"",m.email||"",m.phone||"",m.instagram||"",m.goal||"",m.luluSize||"",m.miles,m.streak,m.verifiedRuns||0,m.joinedAt?new Date(m.joinedAt).toLocaleDateString():""]);const csv=[h.join(","),...r.map(x=>x.map(v=>`"${v}"`).join(","))].join("\n");const blob=new Blob([csv],{type:"text/csv"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="lista-mmm-members.csv";a.click();URL.revokeObjectURL(url);},[allMembers]);
+
+  const progress=currentUser?Math.min((currentUser.miles/GOAL)*100,100):0;
+  const lastMilestone=currentUser?[...MILESTONES].reverse().find(m=>currentUser.miles>=m.at):null;
+  const milesLeft=currentUser?Math.max(0,GOAL-currentUser.miles):GOAL;
+  const sorted=[...allMembers].sort((a,b)=>b.miles-a.miles);
+  const userRank=currentUser?sorted.findIndex(m=>m.id===currentUser.id)+1:0;
+  const weeklyEntries=currentUser?Object.entries(currentUser.weeklyMiles||{}).map(([k,v])=>({week:parseInt(k.replace("w","")),miles:v})).sort((a,b)=>a.week-b.week):[];
+  const maxWeek=weeklyEntries.length>0?Math.max(...weeklyEntries.map(w=>w.miles)):1;
+  const recentLogs=logHistory.slice(-5).reverse();
+  const daysSincePrep=Math.floor((new Date()-new Date("2026-06-29"))/(1000*60*60*24));
+  const currentWeekIdx=Math.min(Math.max(0,Math.floor(daysSincePrep/7)),WEEKLY_THEMES.length-1);
+  const currentTheme=WEEKLY_THEMES[currentWeekIdx];
+  const css = "@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}@keyframes pop{0%{transform:scale(0.8);opacity:0}50%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}input:focus{outline:none}input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}input[type=number]{-moz-appearance:textfield}";
+
+  if(loading) return(<div style={{fontFamily:sans,background:c.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{textAlign:"center"}}><div style={{fontFamily:font,fontSize:28,fontStyle:"italic",fontWeight:300,color:c.text}}>mind.movement.miles</div><div style={{fontSize:12,color:c.sub,marginTop:8}}>loading...</div></div></div>);
+
+  if(!authUser) return(
+    <div style={{fontFamily:sans,background:c.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+      <div style={{maxWidth:380,width:"100%",animation:"fadeUp 0.6s ease"}}>
+        <style>{css}</style>
+        <div style={{textAlign:"center",marginBottom:32}}>
+          <div style={{marginBottom:12,display:"flex",justifyContent:"center"}}><img src={LOGO} alt="LISTA" style={{height:48,objectFit:"contain"}} /></div>
+          <div style={{fontFamily:font,fontSize:32,fontWeight:300,fontStyle:"italic",color:c.text,lineHeight:1.1}}>mind.movement.miles</div>
+          <div style={{fontSize:12,color:c.sub,marginTop:8}}>150 miles &middot; 10 weeks &middot; one community</div>
+        </div>
+        <div style={{background:c.card,borderRadius:20,padding:"28px 24px",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
+          <div style={{fontSize:10,letterSpacing:2,color:c.sub,textTransform:"uppercase",marginBottom:16,textAlign:"center"}}>{authScreen==="login"?"log in":authScreen==="signup"?"create account":"reset password"}</div>
+          <div style={{fontSize:10,letterSpacing:2,color:c.sub,textTransform:"uppercase",marginBottom:6}}>email</div>
+          <input type="email" placeholder="your@email.com" value={authEmail} onChange={e=>setAuthEmail(e.target.value)} style={{width:"100%",padding:"12px 14px",borderRadius:12,border:`1px solid ${c.sand}`,background:c.bg,fontFamily:sans,fontSize:15,color:c.text,marginBottom:12,boxSizing:"border-box"}} />
+          {authScreen!=="reset"&&(<>
+            <div style={{fontSize:10,letterSpacing:2,color:c.sub,textTransform:"uppercase",marginBottom:6}}>password</div>
+            <div style={{position:"relative",marginBottom:authScreen==="signup"?12:16}}>
+              <input type={showPass?"text":"password"} placeholder={authScreen==="signup"?"create a password (6+ chars)":"your password"} value={authPass} onChange={e=>setAuthPass(e.target.value)} onKeyDown={e=>e.key==="Enter"&&(authScreen==="login"?handleSignIn():null)} style={{width:"100%",padding:"12px 44px 12px 14px",borderRadius:12,border:`1px solid ${c.sand}`,background:c.bg,fontFamily:sans,fontSize:15,color:c.text,boxSizing:"border-box"}} />
+              <button onClick={()=>setShowPass(!showPass)} style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:"4px 8px",fontSize:13,color:c.accent,fontWeight:500}}>{showPass?"hide":"show"}</button>
+            </div>
+          </>)}
+          {authScreen==="signup"&&(<>
+            <div style={{fontSize:10,letterSpacing:2,color:c.sub,textTransform:"uppercase",marginBottom:6}}>confirm password</div>
+            <input type={showPass?"text":"password"} placeholder="re-enter your password" value={authPassConfirm} onChange={e=>setAuthPassConfirm(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleSignUp()} style={{width:"100%",padding:"12px 14px",borderRadius:12,border:`1px solid ${c.sand}`,background:c.bg,fontFamily:sans,fontSize:15,color:c.text,marginBottom:16,boxSizing:"border-box"}} />
+          </>)}
+          {authError&&(<div style={{fontSize:13,color:"#a33",marginBottom:14,textAlign:"center",lineHeight:1.5,background:"#FFF0F0",border:"1px solid #FFCCCC",borderRadius:10,padding:"10px 14px"}}>{authError}</div>)}
+          {resetSent&&authScreen==="reset"&&(<div style={{fontSize:12,color:c.green,marginBottom:12,textAlign:"center"}}>reset email sent! check your inbox</div>)}
+          {authScreen==="login"&&(<>
+            <button onClick={handleSignIn} disabled={authLoading} style={{width:"100%",padding:14,borderRadius:14,border:"none",background:`linear-gradient(135deg,${c.highlight},${c.accent})`,color:"#fff",fontFamily:sans,fontSize:14,fontWeight:500,letterSpacing:1.5,textTransform:"uppercase",cursor:"pointer",opacity:authLoading?0.6:1}}>{authLoading?"logging in...":"log in"}</button>
+            <div style={{textAlign:"center",marginTop:14}}><span onClick={()=>{setAuthScreen("reset");setAuthError("");}} style={{fontSize:12,color:c.accent,cursor:"pointer"}}>forgot password?</span></div>
+            <div style={{textAlign:"center",marginTop:10}}><span style={{fontSize:12,color:c.sub}}>no account? </span><span onClick={()=>{setAuthScreen("signup");setAuthError("");setAuthPassConfirm("");}} style={{fontSize:12,color:c.accent,cursor:"pointer",fontWeight:500}}>sign up</span></div>
+          </>)}
+          {authScreen==="signup"&&(<>
+            <button onClick={handleSignUp} disabled={authLoading} style={{width:"100%",padding:14,borderRadius:14,border:"none",background:`linear-gradient(135deg,${c.highlight},${c.accent})`,color:"#fff",fontFamily:sans,fontSize:14,fontWeight:500,letterSpacing:1.5,textTransform:"uppercase",cursor:"pointer",opacity:authLoading?0.6:1}}>{authLoading?"creating account...":"create account"}</button>
+            <div style={{textAlign:"center",marginTop:14}}><span style={{fontSize:12,color:c.sub}}>already have an account? </span><span onClick={()=>{setAuthScreen("login");setAuthError("");}} style={{fontSize:12,color:c.accent,cursor:"pointer",fontWeight:500}}>log in</span></div>
+          </>)}
+          {authScreen==="reset"&&(<>
+            <button onClick={handleResetPassword} disabled={authLoading} style={{width:"100%",padding:14,borderRadius:14,border:"none",background:`linear-gradient(135deg,${c.highlight},${c.accent})`,color:"#fff",fontFamily:sans,fontSize:14,fontWeight:500,letterSpacing:1.5,textTransform:"uppercase",cursor:"pointer",opacity:authLoading?0.6:1}}>{authLoading?"sending...":"send reset link"}</button>
+            <div style={{textAlign:"center",marginTop:14}}><span onClick={()=>{setAuthScreen("login");setAuthError("");setResetSent(false);}} style={{fontSize:12,color:c.accent,cursor:"pointer"}}>back to login</span></div>
+          </>)}
+        </div>
+        <div style={{textAlign:"center",marginTop:16,fontSize:11,color:c.sub,fontStyle:"italic"}}>movement &middot; energy &middot; power</div>
+      </div>
+    </div>
+  );
+
+  if(!currentUser||needsProfile) return(
+    <div style={{fontFamily:sans,background:c.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+      <style>{css}</style>
+      <div style={{maxWidth:380,width:"100%",animation:"fadeUp 0.6s ease"}}>
+        <div style={{textAlign:"center",marginBottom:24}}>
+          <div style={{marginBottom:12,display:"flex",justifyContent:"center"}}><img src={LOGO} alt="LISTA" style={{height:48,objectFit:"contain"}} /></div>
+          <div style={{fontFamily:font,fontSize:28,fontWeight:300,fontStyle:"italic",color:c.text}}>complete your profile</div>
+          <div style={{fontSize:12,color:c.sub,marginTop:4}}>{authUser.email}</div>
+        </div>
+        <div style={{background:c.card,borderRadius:20,padding:"28px 24px",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
+          <div style={{fontSize:10,letterSpacing:2,color:c.sub,textTransform:"uppercase",marginBottom:12}}>choose your avatar</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:20,justifyContent:"center"}}>{AVATARS.map(a=>(<button key={a} onClick={()=>setOnboardAvatar(a)} style={{width:44,height:44,borderRadius:12,border:onboardAvatar===a?`2px solid ${c.accent}`:`1px solid ${c.sand}`,background:onboardAvatar===a?c.soft:"transparent",fontSize:20,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>{a}</button>))}</div>
+          <div style={{display:"flex",gap:8,marginBottom:12}}>
+            <div style={{flex:1}}><div style={{fontSize:10,letterSpacing:2,color:c.sub,textTransform:"uppercase",marginBottom:6}}>first name *</div><input type="text" placeholder="first name" value={onboardName} onChange={e=>setOnboardName(e.target.value)} style={{width:"100%",padding:"12px 14px",borderRadius:12,border:`1px solid ${c.sand}`,background:c.bg,fontFamily:sans,fontSize:15,color:c.text,boxSizing:"border-box"}} /></div>
+            <div style={{flex:1}}><div style={{fontSize:10,letterSpacing:2,color:c.sub,textTransform:"uppercase",marginBottom:6}}>last name *</div><input type="text" placeholder="last name" value={onboardLastName} onChange={e=>setOnboardLastName(e.target.value)} style={{width:"100%",padding:"12px 14px",borderRadius:12,border:`1px solid ${c.sand}`,background:c.bg,fontFamily:sans,fontSize:15,color:c.text,boxSizing:"border-box"}} /></div>
+          </div>
+          <div style={{fontSize:10,letterSpacing:2,color:c.sub,textTransform:"uppercase",marginBottom:6}}>phone *</div>
+          <input type="tel" placeholder="(310) 555-1234" value={onboardPhone} onChange={e=>setOnboardPhone(e.target.value)} style={{width:"100%",padding:"12px 14px",borderRadius:12,border:`1px solid ${c.sand}`,background:c.bg,fontFamily:sans,fontSize:15,color:c.text,marginBottom:12,boxSizing:"border-box"}} />
+          <div style={{fontSize:10,letterSpacing:2,color:c.sub,textTransform:"uppercase",marginBottom:6}}>instagram handle *</div>
+          <input type="text" placeholder="@yourhandle" value={onboardIG} onChange={e=>setOnboardIG(e.target.value)} style={{width:"100%",padding:"12px 14px",borderRadius:12,border:`1px solid ${c.sand}`,background:c.bg,fontFamily:sans,fontSize:15,color:c.text,marginBottom:12,boxSizing:"border-box"}} />
+          <div style={{fontSize:10,letterSpacing:2,color:c.sub,textTransform:"uppercase",marginBottom:6}}>do you plan to complete 100 miles? *</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>{["Going for 150!","Yes, going for 100!","Aiming for a milestone (25/50/75)","Maybe - we'll see","Here for the community vibes"].map(opt=>(<button key={opt} onClick={()=>setOnboardGoal(opt)} style={{padding:"8px 12px",borderRadius:10,border:onboardGoal===opt?`2px solid ${c.accent}`:`1px solid ${c.sand}`,background:onboardGoal===opt?c.soft:"transparent",fontFamily:sans,fontSize:12,color:onboardGoal===opt?c.accent:c.sub,cursor:"pointer",fontWeight:onboardGoal===opt?600:400}}>{opt}</button>))}</div>
+          <div style={{fontSize:10,letterSpacing:2,color:c.sub,textTransform:"uppercase",marginBottom:6}}>preferred lululemon top size *</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:20}}>{["0","2","4","6","8","10","12","14"].map(sz=>(<button key={sz} onClick={()=>setOnboardSize(sz)} style={{width:42,height:42,borderRadius:10,border:onboardSize===sz?`2px solid ${c.accent}`:`1px solid ${c.sand}`,background:onboardSize===sz?c.soft:"transparent",fontFamily:sans,fontSize:14,color:onboardSize===sz?c.accent:c.sub,cursor:"pointer",fontWeight:onboardSize===sz?600:400,display:"flex",alignItems:"center",justifyContent:"center"}}>{sz}</button>))}</div>
+          <button onClick={handleJoin} disabled={!canJoin} style={{width:"100%",padding:16,borderRadius:14,border:"none",background:canJoin?`linear-gradient(135deg,${c.highlight},${c.accent})`:c.sand,color:canJoin?"#fff":c.sub,fontFamily:sans,fontSize:14,fontWeight:500,letterSpacing:1.5,textTransform:"uppercase",cursor:canJoin?"pointer":"default"}}>join the challenge</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  return(
+    <div style={{fontFamily:sans,background:c.bg,minHeight:"100vh",color:c.text,maxWidth:430,margin:"0 auto",position:"relative"}}>
+      <style>{css}</style>
+      <div style={{padding:"24px 24px 16px",opacity:ready?1:0,transform:ready?"translateY(0)":"translateY(-10px)",transition:"all 0.6s ease"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+          <img src={LOGO} alt="LISTA" style={{height:36,objectFit:"contain"}} />
+          <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:18}}>{currentUser.avatar}</span><span style={{fontSize:13,color:c.accent,fontWeight:500}}>{currentUser.name}</span></div>
+        </div>
+        <h1 style={{fontFamily:font,fontSize:32,fontWeight:300,fontStyle:"italic",color:c.text,lineHeight:1.1}}>mind.movement.miles</h1>
+        <div style={{marginTop:12,height:1,background:`linear-gradient(90deg,${c.warm},transparent)`}} />
+      </div>
+      <div style={{padding:"0 24px 120px",opacity:ready?1:0,animation:ready?"fadeUp 0.5s ease forwards":"none"}}>
+        {tab==="home"&&(<div>
+          <div style={{display:"flex",justifyContent:"center",margin:"8px 0 24px"}}><div style={{position:"relative",width:200,height:200}}>
+            <svg width="200" height="200" viewBox="0 0 200 200"><circle cx="100" cy="100" r="85" fill="none" stroke={c.sand} strokeWidth="6" /><circle cx="100" cy="100" r="85" fill="none" stroke="url(#pg)" strokeWidth="6" strokeLinecap="round" strokeDasharray={`${progress*5.34} ${534-progress*5.34}`} strokeDashoffset="133.5" style={{transition:"stroke-dasharray 1s ease"}} /><defs><linearGradient id="pg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor={c.highlight} /><stop offset="100%" stopColor={c.accent} /></linearGradient></defs></svg>
+            <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",textAlign:"center"}}><div style={{fontFamily:font,fontSize:44,fontWeight:300,lineHeight:1,color:c.text}}>{currentUser.miles}</div><div style={{fontSize:11,color:c.sub,letterSpacing:2,marginTop:4,textTransform:"uppercase"}}>of {GOAL} miles</div>{lastMilestone&&<div style={{marginTop:6,fontSize:18}}>{lastMilestone.icon}</div>}</div>
+          </div></div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:20}}>{[{label:"miles left",value:milesLeft.toFixed(1)},{label:"day streak",value:`${currentUser.streak}`},{label:"rank",value:userRank>0?`#${userRank}`:"--"}].map((s,i)=>(<div key={i} style={{background:c.card,borderRadius:14,padding:"14px 10px",textAlign:"center",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}><div style={{fontFamily:font,fontSize:22,fontWeight:400,color:c.text}}>{s.value}</div><div style={{fontSize:10,color:c.sub,letterSpacing:1.5,marginTop:3,textTransform:"uppercase"}}>{s.label}</div></div>))}</div>
+          <div style={{background:`linear-gradient(135deg,${c.card},#FBF6F0)`,borderRadius:16,padding:"16px 20px",marginBottom:16,border:`1px solid ${c.sand}`}}><div style={{fontSize:9,letterSpacing:2,color:c.sub,textTransform:"uppercase"}}>week {currentTheme.week} theme</div><div style={{fontFamily:font,fontSize:20,fontStyle:"italic",fontWeight:300,color:c.text,marginTop:4}}>{currentTheme.theme}</div><div style={{fontSize:10,color:c.warm,marginTop:4}}>{currentTheme.dates}</div></div>
+          <a href={SPOTIFY_URL} target="_blank" rel="noopener noreferrer" style={{textDecoration:"none"}}><div style={{background:"#1DB954",borderRadius:14,padding:"14px 20px",marginBottom:16,display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}><span style={{fontSize:22}}>&#x1F3A7;</span><div><div style={{fontSize:13,fontWeight:600,color:"#fff"}}>LISTA summer playlist baby</div><div style={{fontSize:10,color:"rgba(255,255,255,0.8)"}}>tap to open on spotify</div></div><div style={{marginLeft:"auto",fontSize:16,color:"#fff"}}>&nearr;</div></div></a>
+          <div style={{background:c.card,borderRadius:16,padding:"18px 20px",marginBottom:16,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}><div style={{fontSize:10,letterSpacing:2,color:c.sub,textTransform:"uppercase",marginBottom:14}}>milestones</div><div style={{display:"flex",flexDirection:"column",gap:10}}>{MILESTONES.map((m,i)=>{const hit=currentUser.miles>=m.at;return(<div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 12px",borderRadius:12,background:hit?`linear-gradient(135deg,#FBF6F0,${c.soft})`:c.bg,opacity:hit?1:0.6}}><div style={{width:40,height:40,borderRadius:"50%",flexShrink:0,background:hit?`linear-gradient(135deg,${c.highlight},${c.accent})`:c.sand,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>{m.icon}</div><div style={{flex:1}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:13,fontWeight:500,color:hit?c.text:c.sub}}>{m.at} miles -- {m.label}</span>{hit&&<span style={{fontSize:8,background:c.green,color:"#fff",padding:"2px 6px",borderRadius:4,fontWeight:600}}>unlocked</span>}</div><div style={{fontSize:10,color:c.sub,marginTop:2}}>{m.desc}</div><div style={{fontSize:9,color:c.warm,marginTop:2}}>unlock: {m.unlock}</div></div></div>);})}</div></div>
+          {weeklyEntries.length>0&&(<div style={{background:c.card,borderRadius:16,padding:"18px 20px",marginBottom:16,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}><div style={{fontSize:10,letterSpacing:2,color:c.sub,textTransform:"uppercase",marginBottom:16}}>weekly breakdown</div><div style={{display:"flex",alignItems:"flex-end",gap:8,height:100}}>{weeklyEntries.map((w,i)=>{const h=maxWeek>0?(w.miles/maxWeek)*80:0;return(<div key={i} style={{flex:1,textAlign:"center"}}><div style={{fontSize:10,color:c.text,fontWeight:500,marginBottom:4}}>{w.miles}</div><div style={{height:h,borderRadius:6,minHeight:4,background:i===weeklyEntries.length-1?`linear-gradient(180deg,${c.highlight},${c.accent})`:c.sand}} /><div style={{fontSize:9,color:c.sub,marginTop:5}}>w{w.week}</div></div>);})}</div><div style={{fontSize:9,color:c.warm,marginTop:8,textAlign:"center"}}>weekly minimum: {WEEKLY_MIN} miles &middot; bonus pace: 17 miles/week</div></div>)}
+          <div style={{background:c.card,borderRadius:16,padding:"20px 22px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}><div style={{fontFamily:font,fontSize:18,fontStyle:"italic",fontWeight:300,lineHeight:1.4,color:c.text}}>"{dailyQuote.text}"</div><div style={{fontSize:10,color:c.sub,marginTop:8,letterSpacing:1}}>-- {dailyQuote.author}</div></div>
+        </div>)}
+
+        {tab==="log"&&(<div>
+          <div style={{textAlign:"center",marginBottom:28}}><div style={{fontFamily:font,fontSize:28,fontWeight:300,fontStyle:"italic",color:c.text}}>log your miles</div><div style={{fontSize:12,color:c.sub,marginTop:4}}>every mile is a conversation with yourself</div></div>
+          <div style={{background:c.card,borderRadius:20,padding:"32px 24px",textAlign:"center",boxShadow:"0 2px 8px rgba(0,0,0,0.05)"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:24}}><input type="number" placeholder="0.0" value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLog()} style={{fontFamily:font,fontSize:56,fontWeight:300,width:160,textAlign:"center",border:"none",borderBottom:`2px solid ${c.sand}`,background:"transparent",color:c.text,padding:"8px 0"}} /><span style={{fontSize:14,color:c.sub,letterSpacing:1}}>mi</span></div>
+            <div style={{display:"flex",gap:8,justifyContent:"center",marginBottom:20}}>{[1,2,3,5].map(n=>(<button key={n} onClick={()=>setInput(String(n))} style={{width:48,height:48,borderRadius:12,border:`1px solid ${c.sand}`,background:input===String(n)?c.accent:"transparent",color:input===String(n)?"#fff":c.sub,fontFamily:sans,fontSize:14,fontWeight:500,cursor:"pointer"}}>+{n}</button>))}</div>
+            <div style={{marginBottom:20,textAlign:"left"}}><div style={{fontSize:10,letterSpacing:2,color:c.red,textTransform:"uppercase",marginBottom:8,textAlign:"center",fontWeight:500}}>strava proof (required)</div><div style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",borderRadius:12,border:`1px solid ${stravaLink?c.accent:c.sand}`,background:c.bg}}><span style={{fontSize:16,flexShrink:0}}>&#x1F3C3;&zwj;&#x2640;&zwj;</span><input type="url" placeholder="paste strava activity link" value={stravaLink} onChange={e=>setStravaLink(e.target.value)} style={{flex:1,border:"none",background:"transparent",fontFamily:sans,fontSize:13,color:c.text,padding:0}} />{stravaLink&&<span style={{fontSize:12,color:c.green,fontWeight:600,flexShrink:0}}>&#x2713;</span>}</div><div style={{fontSize:10,color:c.accent,marginTop:6,textAlign:"center",fontStyle:"italic",fontWeight:500}}>open strava &rarr; tap your run &rarr; share &rarr; copy link</div></div>
+            <button onClick={handleLog} disabled={!input||parseFloat(input)<=0||!stravaLink.trim()} style={{width:"100%",padding:16,borderRadius:14,border:"none",background:input&&parseFloat(input)>0&&stravaLink.trim()?`linear-gradient(135deg,${c.highlight},${c.accent})`:c.sand,color:input&&parseFloat(input)>0&&stravaLink.trim()?"#fff":c.sub,fontFamily:sans,fontSize:14,fontWeight:500,letterSpacing:1.5,textTransform:"uppercase",cursor:input&&parseFloat(input)>0&&stravaLink.trim()?"pointer":"default"}}>log miles</button>
+            {logged&&(<div style={{marginTop:16,animation:"pop 0.4s ease forwards",color:c.green,fontSize:14,fontWeight:500}}>&#x2713; miles logged -- keep moving, keep growing &#x1F331;</div>)}
+          </div>
+          {recentLogs.length>0&&(<div style={{marginTop:20,background:c.card,borderRadius:16,padding:"18px 20px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}><div style={{fontSize:10,letterSpacing:2,color:c.sub,textTransform:"uppercase",marginBottom:12}}>recent logs</div>{recentLogs.map((l,i)=>(<div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:i<recentLogs.length-1?`1px solid ${c.soft}`:"none"}}><div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:13,color:c.sub}}>{new Date(l.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>{l.strava&&<a href={l.strava} target="_blank" rel="noopener noreferrer" style={{fontSize:9,background:c.green,color:"#fff",padding:"2px 6px",borderRadius:4,textDecoration:"none",fontWeight:600}}>verified &#x2713;</a>}</div><span style={{fontSize:13,color:c.text,fontWeight:500}}>+{l.miles} mi</span></div>))}</div>)}
+        </div>)}
+
+        {tab==="board"&&(<div>
+          <div style={{textAlign:"center",marginBottom:24}}><div style={{fontFamily:font,fontSize:28,fontWeight:300,fontStyle:"italic",color:c.text}}>the board</div><div style={{fontSize:12,color:c.sub,marginTop:4}}>we rise by lifting each other</div></div>
+          {sorted.length===0?(<div style={{background:c.card,borderRadius:16,padding:"40px 20px",textAlign:"center"}}><div style={{fontSize:32,marginBottom:12}}>&#x1F331;</div><div style={{fontFamily:font,fontSize:20,fontStyle:"italic",color:c.text}}>you're the first one here</div></div>):(
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>{sorted.map((m,i)=>{const p=Math.min((m.miles/GOAL)*100,100);const isUser=currentUser&&m.id===currentUser.id;return(<div key={m.id} style={{background:isUser?`linear-gradient(135deg,${c.card},#FBF6F0)`:c.card,borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",gap:12,boxShadow:isUser?"0 2px 8px rgba(139,111,78,0.1)":"0 1px 3px rgba(0,0,0,0.03)",border:isUser?`1px solid ${c.warm}`:"1px solid transparent",animation:`fadeUp 0.4s ease ${i*0.06}s both`}}><div style={{width:28,fontFamily:font,fontSize:i<3?20:16,fontWeight:400,color:i===0?c.highlight:i<3?c.accent:c.sub,textAlign:"center"}}>{i===0?"&#x1F451;":i+1}</div><div style={{width:38,height:38,borderRadius:"50%",background:c.soft,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{m.avatar}</div><div style={{flex:1,minWidth:0}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}><span style={{fontSize:14,fontWeight:isUser?600:400,color:c.text}}>{m.name} {isUser&&<span style={{fontSize:10,color:c.accent}}>(you)</span>}</span><span style={{fontFamily:font,fontSize:16,fontWeight:400,color:c.text}}>{m.miles} <span style={{fontSize:10,color:c.sub}}>mi</span></span></div><div style={{height:4,borderRadius:2,background:c.soft,overflow:"hidden"}}><div style={{height:"100%",width:`${p}%`,borderRadius:2,background:isUser?`linear-gradient(90deg,${c.highlight},${c.accent})`:c.warm,transition:"width 0.8s ease"}} /></div><div style={{display:"flex",justifyContent:"space-between",marginTop:4}}><span style={{fontSize:9,color:c.sub}}>&#x1F525; {m.streak} day streak</span><span style={{fontSize:9,color:c.sub}}>{Math.round(p)}%</span></div></div></div>);})}</div>)}
+          {sorted.length>0&&(<div style={{marginTop:20,background:c.card,borderRadius:16,padding:"18px 20px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}><div style={{textAlign:"center"}}><div style={{fontFamily:font,fontSize:26,fontWeight:300,color:c.text}}>{sorted.reduce((a,m)=>a+m.miles,0).toFixed(1)}</div><div style={{fontSize:9,letterSpacing:1.5,color:c.sub,textTransform:"uppercase",marginTop:2}}>total community miles</div></div><div style={{textAlign:"center"}}><div style={{fontFamily:font,fontSize:26,fontWeight:300,color:c.text}}>{sorted.length}</div><div style={{fontSize:9,letterSpacing:1.5,color:c.sub,textTransform:"uppercase",marginTop:2}}>active members</div></div></div>)}
+        </div>)}
+
+        {tab==="info"&&(<div>
+          <div style={{textAlign:"center",marginBottom:24}}><div style={{fontFamily:font,fontSize:28,fontWeight:300,fontStyle:"italic",color:c.text}}>challenge info</div></div>
+          <div style={{background:c.card,borderRadius:16,padding:"18px 20px",marginBottom:12,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}><div style={{fontSize:10,letterSpacing:2,color:c.sub,textTransform:"uppercase",marginBottom:10}}>requirements</div><div style={{fontSize:13,color:c.text,lineHeight:1.8}} dangerouslySetInnerHTML={{__html:"&#x2713; minimum 12 miles per week<br/>&#x2713; 150-mile bonus pace: 17 miles/week<br/>&#x2713; 8 out of 10 LISTA tuesday runs required<br/>&#x2713; join the mind.movement.miles strava club<br/>&#x2713; tag @mind.movement.miles on strava<br/>&#x2713; follow @runlista on instagram and tiktok<br/>&#x2713; strava proof required when logging miles"}} /></div>
+          <div style={{background:c.card,borderRadius:16,padding:"18px 20px",marginBottom:12,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}><div style={{fontSize:10,letterSpacing:2,color:c.sub,textTransform:"uppercase",marginBottom:10}}>key dates</div><div style={{fontSize:13,color:c.text,lineHeight:1.8}} dangerouslySetInnerHTML={{__html:"<b>june 29</b> -- prep week starts<br/><b>july 6</b> -- miles start counting<br/><b>july 7</b> -- kickoff run at pressed juicery (larchmont)<br/><b>july 26</b> -- 25-mile unlock<br/><b>august 9</b> -- 50-mile unlock<br/><b>august 23</b> -- 75-mile unlock<br/><b>september 6</b> -- 100-mile unlock / last day<br/><b>september 8</b> -- last tuesday run / 100-mile pickup<br/><b>september 20</b> -- 150-mile bonus club experience"}} /></div>
+          <div style={{background:c.card,borderRadius:16,padding:"18px 20px",marginBottom:12,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}><div style={{fontSize:10,letterSpacing:2,color:c.sub,textTransform:"uppercase",marginBottom:10}}>milestone rewards</div><div style={{fontSize:13,color:c.text,lineHeight:1.8}} dangerouslySetInnerHTML={{__html:"&#x1F305; <b>25 miles</b> -- sunset beach run + joia juices<br/>&#x1F4F8; <b>50 miles</b> -- vision board workshop + film pics<br/>&#x1F9D8; <b>75 miles</b> -- custom LISTA journal + wellness tote<br/>&#x1F45F; <b>100 miles</b> -- LISTA x lululemon finisher apparel<br/>&#x1F451; <b>150 miles</b> -- private sunset yoga + cold plunge"}} /></div>
+          <div style={{background:c.card,borderRadius:16,padding:"18px 20px",marginBottom:12,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}><div style={{fontSize:10,letterSpacing:2,color:c.sub,textTransform:"uppercase",marginBottom:10}}>brand partners</div><div style={{fontSize:13,color:c.text,lineHeight:1.8}} dangerouslySetInnerHTML={{__html:"<b>lululemon</b> -- finisher apparel, journals<br/><b>joia juices</b> -- 25-mile milestone juices<br/><b>pressed juicery</b> -- tuesday run home base<br/><b>mudita earth</b> -- skincare for wellness totes<br/><b>blacklistLA</b> -- covering lululemon costs"}} /></div>
+          <div style={{background:c.card,borderRadius:16,padding:"18px 20px",marginBottom:12,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}><div style={{fontSize:10,letterSpacing:2,color:c.sub,textTransform:"uppercase",marginBottom:10}}>weekly themes</div><div style={{fontSize:13,color:c.text,lineHeight:1.8}}>{WEEKLY_THEMES.map((t,i)=>(<div key={i}><b>week {t.week}</b> -- {t.theme} ({t.dates}){t.prep?" * prep week":""}<br/></div>))}</div></div>
+        </div>)}
+
+        {tab==="admin"&&isAdmin&&(<div>
+          <div style={{textAlign:"center",marginBottom:24}}><div style={{fontFamily:font,fontSize:28,fontWeight:300,fontStyle:"italic",color:c.text}}>committee view</div></div>
+          <div style={{background:c.card,borderRadius:16,padding:"18px 20px",marginBottom:16,display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}><div style={{textAlign:"center"}}><div style={{fontFamily:font,fontSize:24,fontWeight:300}}>{allMembers.length}</div><div style={{fontSize:9,color:c.sub,textTransform:"uppercase"}}>members</div></div><div style={{textAlign:"center"}}><div style={{fontFamily:font,fontSize:24,fontWeight:300}}>{allMembers.reduce((a,m)=>a+(m.verifiedRuns||0),0)}</div><div style={{fontSize:9,color:c.sub,textTransform:"uppercase"}}>verified</div></div><div style={{textAlign:"center"}}><div style={{fontFamily:font,fontSize:24,fontWeight:300}}>{allMembers.filter(m=>m.miles>=GOAL).length}</div><div style={{fontSize:9,color:c.sub,textTransform:"uppercase"}}>completed</div></div></div>
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>{sorted.map(m=>{const p=Math.min((m.miles/GOAL)*100,100);const isExp=expandedMember===m.id;const logs=memberLogs[m.id]||[];const vc=m.verifiedRuns||0;return(<div key={m.id}><div onClick={()=>loadMemberLogs(m.id)} style={{background:c.card,borderRadius:isExp?"14px 14px 0 0":14,padding:"14px 16px",display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}><div style={{width:38,height:38,borderRadius:"50%",background:c.soft,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{m.avatar}</div><div style={{flex:1}}><div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontSize:14,fontWeight:500}}>{m.name}</span><span style={{fontFamily:font,fontSize:16}}>{m.miles} mi</span></div><div style={{display:"flex",alignItems:"center",gap:6,marginTop:4}}><div style={{flex:1,height:4,borderRadius:2,background:c.soft,overflow:"hidden"}}><div style={{height:"100%",width:`${p}%`,background:c.warm}} /></div><span style={{fontSize:8,padding:"1px 5px",borderRadius:3,fontWeight:600,background:vc>0?c.green:"#F0D9B5",color:vc>0?"#fff":c.accent}}>{vc} &#x2713;</span></div></div><div style={{fontSize:14,color:c.sub,transform:isExp?"rotate(180deg)":"rotate(0)"}}>&#x25BE;</div></div>
+            {isExp&&(<div style={{background:c.card,borderRadius:"0 0 14px 14px",padding:"0 16px 16px",border:`1px solid ${c.warm}`,borderTop:`1px solid ${c.soft}`}}>
+              <div style={{fontSize:10,letterSpacing:2,color:c.sub,textTransform:"uppercase",marginTop:10,marginBottom:8}}>activity log</div>
+              {logs.length===0?<div style={{fontSize:12,color:c.sub,fontStyle:"italic"}}>no logs yet</div>:(<div style={{maxHeight:200,overflowY:"auto"}}>{[...logs].reverse().map((l,j)=>(<div key={j} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:j<logs.length-1?`1px solid ${c.soft}`:"none"}}><div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:12,color:c.sub}}>{new Date(l.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>{l.strava?<a href={l.strava} target="_blank" rel="noopener noreferrer" style={{fontSize:8,background:c.green,color:"#fff",padding:"2px 6px",borderRadius:4,textDecoration:"none",fontWeight:600}}>strava &#x2197;</a>:<span style={{fontSize:8,background:c.soft,color:c.sub,padding:"2px 6px",borderRadius:4}}>no proof</span>}</div><span style={{fontSize:12,fontWeight:500}}>+{l.miles} mi</span></div>))}</div>)}
+              <div style={{padding:"8px 0",borderTop:`1px solid ${c.soft}`,marginTop:8}}>{m.email&&<div style={{fontSize:11,color:c.accent}}>{m.email}</div>}{m.phone&&<div style={{fontSize:11,color:c.sub,marginTop:2}}>{m.phone}</div>}{m.instagram&&<div style={{fontSize:11,color:c.sub,marginTop:2}}>{m.instagram}</div>}<div style={{display:"flex",gap:8,marginTop:4}}>{m.luluSize&&<span style={{fontSize:9,background:c.soft,color:c.accent,padding:"2px 8px",borderRadius:4,fontWeight:500}}>lulu size: {m.luluSize}</span>}{m.goal&&<span style={{fontSize:9,background:c.soft,color:c.sub,padding:"2px 8px",borderRadius:4}}>{m.goal}</span>}</div></div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8}}><div style={{fontSize:10,color:c.sub,fontStyle:"italic"}}>joined {new Date(m.joinedAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}</div><button onClick={e=>{e.stopPropagation();handleDeleteMember(m.id,m.name);}} style={{padding:"5px 12px",borderRadius:8,border:`1px solid ${c.red}`,background:"transparent",color:c.red,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:sans}}>remove</button></div>
+            </div>)}
+          </div>);})}</div>
+          <button onClick={handleExportCSV} style={{marginTop:24,width:"100%",padding:14,borderRadius:12,border:"none",background:`linear-gradient(135deg,${c.highlight},${c.accent})`,color:"#fff",fontFamily:sans,fontSize:12,cursor:"pointer",fontWeight:500,letterSpacing:1,textTransform:"uppercase"}}>export to excel</button>
+          <button onClick={handleAdminLogout} style={{marginTop:10,width:"100%",padding:12,borderRadius:12,border:`1px solid ${c.sand}`,background:"transparent",color:c.sub,fontFamily:sans,fontSize:12,cursor:"pointer",textTransform:"uppercase"}}>exit committee view</button>
+          <button onClick={handleLogout} style={{marginTop:10,width:"100%",padding:12,borderRadius:12,border:`1px solid ${c.red}`,background:"transparent",color:c.red,fontFamily:sans,fontSize:12,cursor:"pointer",textTransform:"uppercase"}}>log out</button>
+        </div>)}
+      </div>
+
+      {showAdminLogin&&(<div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(44,40,37,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,padding:24}}><div style={{background:c.bg,borderRadius:20,padding:"32px 24px",maxWidth:340,width:"100%",animation:"pop 0.3s ease forwards"}}><div style={{textAlign:"center",marginBottom:24}}><div style={{fontSize:28,marginBottom:8}}>&#x1F510;</div><div style={{fontFamily:font,fontSize:22,fontStyle:"italic",fontWeight:300}}>committee access</div></div><input type="password" placeholder="enter code" value={adminCode} onChange={e=>setAdminCode(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleAdminLogin()} style={{width:"100%",padding:"14px 16px",borderRadius:12,border:`1px solid ${c.sand}`,background:c.card,fontFamily:sans,fontSize:16,color:c.text,marginBottom:16,textAlign:"center",letterSpacing:4,boxSizing:"border-box"}} /><button onClick={handleAdminLogin} style={{width:"100%",padding:14,borderRadius:12,border:"none",background:`linear-gradient(135deg,${c.highlight},${c.accent})`,color:"#fff",fontFamily:sans,fontSize:13,fontWeight:500,cursor:"pointer",marginBottom:10}}>enter</button><button onClick={()=>{setShowAdminLogin(false);setAdminCode("");}} style={{width:"100%",padding:12,borderRadius:12,border:"none",background:"transparent",color:c.sub,fontFamily:sans,fontSize:12,cursor:"pointer"}}>cancel</button></div></div>)}
+
+      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:430,background:"rgba(247,244,240,0.92)",backdropFilter:"blur(16px)",borderTop:`1px solid ${c.sand}`,display:"flex",justifyContent:"space-around",padding:"10px 0 28px"}}>
+        {[{id:"home",icon:"\u25CE",label:"home"},{id:"log",icon:"\uFF0B",label:"log"},{id:"board",icon:"\u2654",label:"board"},{id:"info",icon:"\u2139",label:"info"},{id:"admin",icon:"\u25C8",label:"crew",needsAdmin:true}].map(t=>{
+          if(t.needsAdmin&&!isAdmin) return(<button key={t.id} onClick={()=>setShowAdminLogin(true)} style={{background:"none",border:"none",cursor:"pointer",textAlign:"center",padding:"4px 16px"}}><div style={{fontSize:18,color:c.sub,marginBottom:2,opacity:0.5}}>&#x1F512;</div><div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:c.sub}}>{t.label}</div></button>);
+          return(<button key={t.id} onClick={()=>setTab(t.id)} style={{background:"none",border:"none",cursor:"pointer",textAlign:"center",padding:"4px 16px"}}><div style={{fontSize:t.id==="log"?22:18,color:tab===t.id?c.accent:c.sub,marginBottom:2}}>{t.icon}</div><div style={{fontSize:9,letterSpacing:1.5,textTransform:"uppercase",color:tab===t.id?c.accent:c.sub,fontWeight:tab===t.id?600:400}}>{t.label}</div></button>);
+        })}
+      </div>
+    </div>
+  );
+}
