@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   saveMember, getAllMembers, onMembersChange,
-  saveMemberLogs, getMemberLogs, deleteMember
+  saveMemberLogs, getMemberLogs, deleteMember,
+  signUpUser, signInUser, signOutUser, resetPassword, onAuthChange
 } from "./firebase.js";
 
 const GOAL = 150;
@@ -86,6 +87,14 @@ export default function App() {
   const [onboardAvatar, setOnboardAvatar] = useState("🌴");
   const [logHistory, setLogHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [authUser, setAuthUser] = useState(null);
+  const [authScreen, setAuthScreen] = useState("login");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPass, setAuthPass] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [needsProfile, setNeedsProfile] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminCode, setAdminCode] = useState("");
   const [showAdminLogin, setShowAdminLogin] = useState(false);
@@ -126,15 +135,69 @@ export default function App() {
   }, []);
 
   // ---- Join ----
-  const canJoin = onboardName.trim() && onboardLastName.trim() && onboardEmail.trim() && onboardPhone.trim() && onboardIG.trim() && onboardGoal && onboardSize;
+  const canJoin = onboardName.trim() && onboardLastName.trim() && onboardPhone.trim() && onboardIG.trim() && onboardGoal && onboardSize;
+
+  // ---- Auth handlers ----
+  const handleSignUp = useCallback(async () => {
+    if (!authEmail.trim() || !authPass.trim()) return;
+    if (authPass.length < 6) { setAuthError("password must be at least 6 characters"); return; }
+    setAuthLoading(true);
+    setAuthError("");
+    try {
+      await signUpUser(authEmail.trim(), authPass);
+      setAuthPass("");
+    } catch (e) {
+      if (e.code === "auth/email-already-in-use") setAuthError("this email is already registered — try logging in");
+      else if (e.code === "auth/invalid-email") setAuthError("please enter a valid email");
+      else setAuthError(e.message);
+    }
+    setAuthLoading(false);
+  }, [authEmail, authPass]);
+
+  const handleSignIn = useCallback(async () => {
+    if (!authEmail.trim() || !authPass.trim()) return;
+    setAuthLoading(true);
+    setAuthError("");
+    try {
+      await signInUser(authEmail.trim(), authPass);
+      setAuthPass("");
+    } catch (e) {
+      if (e.code === "auth/wrong-password" || e.code === "auth/invalid-credential") setAuthError("wrong email or password");
+      else if (e.code === "auth/user-not-found") setAuthError("no account found — try signing up");
+      else if (e.code === "auth/invalid-email") setAuthError("please enter a valid email");
+      else setAuthError(e.message);
+    }
+    setAuthLoading(false);
+  }, [authEmail, authPass]);
+
+  const handleResetPassword = useCallback(async () => {
+    if (!authEmail.trim()) { setAuthError("enter your email first"); return; }
+    setAuthLoading(true);
+    setAuthError("");
+    try {
+      await resetPassword(authEmail.trim());
+      setResetSent(true);
+    } catch (e) {
+      setAuthError("couldn't send reset email — check the address");
+    }
+    setAuthLoading(false);
+  }, [authEmail]);
+
+  const handleLogout = useCallback(async () => {
+    await signOutUser();
+    setCurrentUser(null);
+    setAuthUser(null);
+    setIsAdmin(false);
+    localStorage.removeItem("lista-mmm-admin");
+  }, []);
 
   const handleJoin = useCallback(async () => {
     if (!canJoin) return;
     const newUser = {
-      id: generateId(),
+      id: authUser.uid,
       name: onboardName.trim().toLowerCase(),
       lastName: onboardLastName.trim().toLowerCase(),
-      email: onboardEmail.trim().toLowerCase(),
+      email: authUser.email,
       phone: onboardPhone.trim(),
       instagram: onboardIG.trim(),
       goal: onboardGoal,
@@ -148,9 +211,9 @@ export default function App() {
       weeklyMiles: {},
     };
     setCurrentUser(newUser);
-    localStorage.setItem("lista-mmm-user", JSON.stringify(newUser));
+    setNeedsProfile(false);
     await saveMember(newUser);
-  }, [onboardName, onboardLastName, onboardEmail, onboardPhone, onboardIG, onboardGoal, onboardSize, onboardAvatar, canJoin]);
+  }, [onboardName, onboardLastName, onboardPhone, onboardIG, onboardGoal, onboardSize, onboardAvatar, canJoin]);
 
   // ---- Export members to CSV ----
   const handleExportCSV = useCallback(() => {
@@ -211,7 +274,6 @@ export default function App() {
 
     setCurrentUser(updated);
     setLogHistory(newHistory);
-    localStorage.setItem("lista-mmm-user", JSON.stringify(updated));
 
     await saveMember(updated);
     await saveMemberLogs(updated.id, newHistory);
@@ -290,8 +352,120 @@ export default function App() {
     );
   }
 
-  // ---- Onboarding ----
-  if (!currentUser) {
+  // ---- Auth Screen (Login / Sign Up / Forgot Password) ----
+  if (!authUser) {
+    return (
+      <div style={{ fontFamily: sans, background: c.bg, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div style={{ maxWidth: 380, width: "100%", animation: "fadeUp 0.6s ease" }}>
+          <div style={{ textAlign: "center", marginBottom: 32 }}>
+            <div style={{ marginBottom: 12, display: "flex", justifyContent: "center" }}>
+              <img src={LOGO} alt="LISTA Run Club" style={{ height: 48, objectFit: "contain" }} />
+            </div>
+            <div style={{ fontFamily: font, fontSize: 32, fontWeight: 300, fontStyle: "italic", color: c.text, lineHeight: 1.1 }}>
+              mind.movement.miles
+            </div>
+            <div style={{ fontSize: 12, color: c.sub, marginTop: 8 }}>150 miles · 10 weeks · one community</div>
+          </div>
+
+          <div style={{ background: c.card, borderRadius: 20, padding: "28px 24px", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+            <div style={{ fontSize: 10, letterSpacing: 2, color: c.sub, textTransform: "uppercase", marginBottom: 16, textAlign: "center" }}>
+              {authScreen === "login" ? "log in" : authScreen === "signup" ? "create account" : "reset password"}
+            </div>
+
+            <div style={{ fontSize: 10, letterSpacing: 2, color: c.sub, textTransform: "uppercase", marginBottom: 6 }}>email</div>
+            <input type="email" placeholder="your@email.com" value={authEmail}
+              onChange={(e) => { setAuthEmail(e.target.value); setAuthError(""); }}
+              style={{
+                width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${c.sand}`,
+                background: c.bg, fontFamily: sans, fontSize: 15, color: c.text, marginBottom: 12, boxSizing: "border-box",
+              }}
+            />
+
+            {authScreen !== "reset" && (
+              <>
+                <div style={{ fontSize: 10, letterSpacing: 2, color: c.sub, textTransform: "uppercase", marginBottom: 6 }}>password</div>
+                <input type="password" placeholder={authScreen === "signup" ? "create a password (6+ chars)" : "your password"} value={authPass}
+                  onChange={(e) => { setAuthPass(e.target.value); setAuthError(""); }}
+                  onKeyDown={(e) => e.key === "Enter" && (authScreen === "login" ? handleSignIn() : handleSignUp())}
+                  style={{
+                    width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${c.sand}`,
+                    background: c.bg, fontFamily: sans, fontSize: 15, color: c.text, marginBottom: 16, boxSizing: "border-box",
+                  }}
+                />
+              </>
+            )}
+
+            {authError && (
+              <div style={{ fontSize: 12, color: c.red, marginBottom: 12, textAlign: "center", lineHeight: 1.4 }}>{authError}</div>
+            )}
+
+            {resetSent && authScreen === "reset" && (
+              <div style={{ fontSize: 12, color: c.green, marginBottom: 12, textAlign: "center", lineHeight: 1.4 }}>
+                reset email sent! check your inbox
+              </div>
+            )}
+
+            {authScreen === "login" && (
+              <>
+                <button onClick={handleSignIn} disabled={authLoading}
+                  style={{
+                    width: "100%", padding: 14, borderRadius: 14, border: "none",
+                    background: `linear-gradient(135deg, ${c.highlight}, ${c.accent})`, color: "#fff",
+                    fontFamily: sans, fontSize: 14, fontWeight: 500, letterSpacing: 1.5, textTransform: "uppercase",
+                    cursor: "pointer", transition: "all 0.3s ease", opacity: authLoading ? 0.6 : 1,
+                  }}>{authLoading ? "logging in..." : "log in"}</button>
+                <div style={{ textAlign: "center", marginTop: 14 }}>
+                  <span onClick={() => { setAuthScreen("reset"); setAuthError(""); }} style={{ fontSize: 12, color: c.accent, cursor: "pointer" }}>forgot password?</span>
+                </div>
+                <div style={{ textAlign: "center", marginTop: 10 }}>
+                  <span style={{ fontSize: 12, color: c.sub }}>no account? </span>
+                  <span onClick={() => { setAuthScreen("signup"); setAuthError(""); }} style={{ fontSize: 12, color: c.accent, cursor: "pointer", fontWeight: 500 }}>sign up</span>
+                </div>
+              </>
+            )}
+
+            {authScreen === "signup" && (
+              <>
+                <button onClick={handleSignUp} disabled={authLoading}
+                  style={{
+                    width: "100%", padding: 14, borderRadius: 14, border: "none",
+                    background: `linear-gradient(135deg, ${c.highlight}, ${c.accent})`, color: "#fff",
+                    fontFamily: sans, fontSize: 14, fontWeight: 500, letterSpacing: 1.5, textTransform: "uppercase",
+                    cursor: "pointer", transition: "all 0.3s ease", opacity: authLoading ? 0.6 : 1,
+                  }}>{authLoading ? "creating account..." : "create account"}</button>
+                <div style={{ textAlign: "center", marginTop: 14 }}>
+                  <span style={{ fontSize: 12, color: c.sub }}>already have an account? </span>
+                  <span onClick={() => { setAuthScreen("login"); setAuthError(""); }} style={{ fontSize: 12, color: c.accent, cursor: "pointer", fontWeight: 500 }}>log in</span>
+                </div>
+              </>
+            )}
+
+            {authScreen === "reset" && (
+              <>
+                <button onClick={handleResetPassword} disabled={authLoading}
+                  style={{
+                    width: "100%", padding: 14, borderRadius: 14, border: "none",
+                    background: `linear-gradient(135deg, ${c.highlight}, ${c.accent})`, color: "#fff",
+                    fontFamily: sans, fontSize: 14, fontWeight: 500, letterSpacing: 1.5, textTransform: "uppercase",
+                    cursor: "pointer", transition: "all 0.3s ease", opacity: authLoading ? 0.6 : 1,
+                  }}>{authLoading ? "sending..." : "send reset link"}</button>
+                <div style={{ textAlign: "center", marginTop: 14 }}>
+                  <span onClick={() => { setAuthScreen("login"); setAuthError(""); setResetSent(false); }} style={{ fontSize: 12, color: c.accent, cursor: "pointer" }}>back to login</span>
+                </div>
+              </>
+            )}
+          </div>
+
+          <div style={{ textAlign: "center", marginTop: 16, fontSize: 11, color: c.sub, fontStyle: "italic" }}>
+            movement · energy · power
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ---- Profile Setup (after auth, before app) ----
+  if (!currentUser || needsProfile) {
     return (
       <div style={{ fontFamily: sans, background: c.bg, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
         <div style={{ maxWidth: 380, width: "100%", animation: "fadeUp 0.6s ease" }}>
@@ -345,16 +519,6 @@ export default function App() {
                 />
               </div>
             </div>
-
-            <div style={{ fontSize: 10, letterSpacing: 2, color: c.sub, textTransform: "uppercase", marginBottom: 6 }}>email *</div>
-            <input type="email" placeholder="your@email.com" value={onboardEmail}
-              onChange={(e) => setOnboardEmail(e.target.value)}
-              style={{
-                width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${c.sand}`,
-                background: c.bg, fontFamily: sans, fontSize: 15, color: c.text, marginBottom: 12,
-                boxSizing: "border-box",
-              }}
-            />
 
             <div style={{ fontSize: 10, letterSpacing: 2, color: c.sub, textTransform: "uppercase", marginBottom: 6 }}>phone *</div>
             <input type="tel" placeholder="(310) 555-1234" value={onboardPhone}
@@ -1053,6 +1217,13 @@ export default function App() {
                 background: "transparent", color: c.sub, fontFamily: sans, fontSize: 12, cursor: "pointer",
                 letterSpacing: 1, textTransform: "uppercase",
               }}>exit committee view</button>
+
+            <button onClick={handleLogout}
+              style={{
+                marginTop: 10, width: "100%", padding: 12, borderRadius: 12, border: `1px solid ${c.red}`,
+                background: "transparent", color: c.red, fontFamily: sans, fontSize: 12, cursor: "pointer",
+                letterSpacing: 1, textTransform: "uppercase",
+              }}>log out</button>
           </div>
         )}
       </div>

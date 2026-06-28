@@ -10,6 +10,10 @@ import {
   getFirestore, collection, doc, setDoc, getDoc,
   getDocs, onSnapshot, query, orderBy, deleteDoc
 } from "firebase/firestore";
+import {
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  signOut, sendPasswordResetEmail, onAuthStateChanged
+} from "firebase/auth";
 
 const firebaseConfig = {
   apiKey:            "AIzaSyBa__oU8pg3V5Yvu4hmgudOlozdA-MC3uY",
@@ -22,6 +26,31 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
+
+// ---- Auth helpers ----
+
+export async function signUpUser(email, password) {
+  const cred = await createUserWithEmailAndPassword(auth, email, password);
+  return cred.user;
+}
+
+export async function signInUser(email, password) {
+  const cred = await signInWithEmailAndPassword(auth, email, password);
+  return cred.user;
+}
+
+export async function signOutUser() {
+  await signOut(auth);
+}
+
+export async function resetPassword(email) {
+  await sendPasswordResetEmail(auth, email);
+}
+
+export function onAuthChange(callback) {
+  return onAuthStateChanged(auth, callback);
+}
 
 // ---- Database helpers ----
 
