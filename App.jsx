@@ -139,33 +139,41 @@ export default function App() {
 
   // ---- Auth handlers ----
   const handleSignUp = useCallback(async () => {
-    if (!authEmail.trim() || !authPass.trim()) return;
+    if (!authEmail.trim()) { setAuthError("please enter your email"); return; }
+    if (!authPass.trim()) { setAuthError("please create a password"); return; }
     if (authPass.length < 6) { setAuthError("password must be at least 6 characters"); return; }
     setAuthLoading(true);
     setAuthError("");
     try {
-      await signUpUser(authEmail.trim(), authPass);
-      setAuthPass("");
+      await signUpUser(authEmail.trim(), authPass.trim());
     } catch (e) {
-      if (e.code === "auth/email-already-in-use") setAuthError("this email is already registered — try logging in");
-      else if (e.code === "auth/invalid-email") setAuthError("please enter a valid email");
-      else setAuthError(e.message);
+      const code = e.code || "";
+      if (code.includes("email-already-in-use")) setAuthError("this email is already registered — try logging in instead");
+      else if (code.includes("invalid-email")) setAuthError("please enter a valid email address");
+      else if (code.includes("weak-password")) setAuthError("password is too weak — use at least 6 characters");
+      else setAuthError("something went wrong: " + (e.message || "please try again"));
+      setAuthLoading(false);
+      return;
     }
     setAuthLoading(false);
   }, [authEmail, authPass]);
 
   const handleSignIn = useCallback(async () => {
-    if (!authEmail.trim() || !authPass.trim()) return;
+    if (!authEmail.trim()) { setAuthError("please enter your email"); return; }
+    if (!authPass.trim()) { setAuthError("please enter your password"); return; }
     setAuthLoading(true);
     setAuthError("");
     try {
-      await signInUser(authEmail.trim(), authPass);
-      setAuthPass("");
+      await signInUser(authEmail.trim(), authPass.trim());
     } catch (e) {
-      if (e.code === "auth/wrong-password" || e.code === "auth/invalid-credential") setAuthError("wrong email or password");
-      else if (e.code === "auth/user-not-found") setAuthError("no account found — try signing up");
-      else if (e.code === "auth/invalid-email") setAuthError("please enter a valid email");
-      else setAuthError(e.message);
+      const code = e.code || "";
+      if (code.includes("wrong-password") || code.includes("invalid-credential")) setAuthError("incorrect email or password — please try again");
+      else if (code.includes("user-not-found")) setAuthError("no account found with this email — try signing up");
+      else if (code.includes("invalid-email")) setAuthError("please enter a valid email address");
+      else if (code.includes("too-many-requests")) setAuthError("too many attempts — please wait a minute and try again");
+      else setAuthError("login failed: " + (e.message || "please try again"));
+      setAuthLoading(false);
+      return;
     }
     setAuthLoading(false);
   }, [authEmail, authPass]);
@@ -396,7 +404,10 @@ export default function App() {
             )}
 
             {authError && (
-              <div style={{ fontSize: 12, color: c.red, marginBottom: 12, textAlign: "center", lineHeight: 1.4 }}>{authError}</div>
+              <div style={{
+                fontSize: 13, color: "#a33", marginBottom: 14, textAlign: "center", lineHeight: 1.5,
+                background: "#FFF0F0", border: "1px solid #FFCCCC", borderRadius: 10, padding: "10px 14px",
+              }}>{authError}</div>
             )}
 
             {resetSent && authScreen === "reset" && (
