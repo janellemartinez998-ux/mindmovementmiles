@@ -6,6 +6,8 @@ import {
 
 const GOAL = 150;
 const ADMIN_CODE = "lista2026";
+
+const LOGO_WHITE = "data:image/png;base64,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";
 const CHALLENGE_START = "2026-07-06";
 const CHALLENGE_END = "2026-09-06";
 const WEEKLY_MIN = 11;
@@ -261,7 +263,12 @@ export default function App() {
       <div style={{ fontFamily: sans, background: c.bg, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
         <div style={{ maxWidth: 380, width: "100%", animation: "fadeUp 0.6s ease" }}>
           <div style={{ textAlign: "center", marginBottom: 40 }}>
-            <div style={{ fontSize: 11, letterSpacing: 3, color: c.sub, textTransform: "uppercase", fontWeight: 500 }}>lista run club</div>
+            <div style={{
+              background: "#2C2825", borderRadius: 16, padding: "20px 24px", marginBottom: 16,
+              display: "flex", justifyContent: "center", alignItems: "center",
+            }}>
+              <img src={LOGO_WHITE} alt="LISTA Run Club" style={{ height: 40, objectFit: "contain" }} />
+            </div>
             <div style={{ fontFamily: font, fontSize: 36, fontWeight: 300, fontStyle: "italic", color: c.text, marginTop: 8, lineHeight: 1.1 }}>
               mind.movement<br />.miles
             </div>
@@ -322,22 +329,25 @@ export default function App() {
 
       {/* header */}
       <div style={{
-        padding: "32px 24px 20px", opacity: ready ? 1 : 0,
+        opacity: ready ? 1 : 0,
         transform: ready ? "translateY(0)" : "translateY(-10px)", transition: "all 0.6s ease",
       }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div>
-            <div style={{ fontSize: 11, letterSpacing: 3, color: c.sub, textTransform: "uppercase", fontWeight: 500 }}>lista run club</div>
-            <h1 style={{ fontFamily: font, fontSize: 32, fontWeight: 300, fontStyle: "italic", marginTop: 4, color: c.text, lineHeight: 1.1 }}>
-              mind.movement.miles
-            </h1>
-          </div>
+        <div style={{
+          background: "#2C2825", padding: "16px 24px", display: "flex",
+          justifyContent: "space-between", alignItems: "center",
+        }}>
+          <img src={LOGO_WHITE} alt="LISTA Run Club" style={{ height: 32, objectFit: "contain" }} />
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ fontSize: 18 }}>{currentUser.avatar}</span>
-            <span style={{ fontSize: 13, color: c.accent, fontWeight: 500 }}>{currentUser.name}</span>
+            <span style={{ fontSize: 13, color: "#EDE8E2", fontWeight: 500 }}>{currentUser.name}</span>
           </div>
         </div>
-        <div style={{ marginTop: 12, height: 1, background: `linear-gradient(90deg, ${c.warm}, transparent)` }} />
+        <div style={{ padding: "16px 24px 12px" }}>
+          <h1 style={{ fontFamily: font, fontSize: 32, fontWeight: 300, fontStyle: "italic", color: c.text, lineHeight: 1.1 }}>
+            mind.movement.miles
+          </h1>
+          <div style={{ marginTop: 12, height: 1, background: `linear-gradient(90deg, ${c.warm}, transparent)` }} />
+        </div>
       </div>
 
       {/* content */}
